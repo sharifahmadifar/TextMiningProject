@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-
+from datasets import Dataset, DatasetDict
+import evaluate
+import torch
+from torch import nn
+from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -11,15 +15,11 @@ from transformers import (
     BertPreTrainedModel,
     BertModel
 )
-from datasets import Dataset, DatasetDict
-import evaluate
-import torch
-from torch import nn
-from transformers.modeling_outputs import SequenceClassifierOutput
 
 
 
-# Load dataset (update this path if needed)
+
+# Loading the dataset
 df = pd.read_csv("convabuse.csv", sep=";")
 df = df[["racist", "sexism", "Input.user"]].dropna()
 print(df.columns)
@@ -52,7 +52,7 @@ def tokenize(example):
 
 tokenized_dataset = dataset.map(tokenize, batched=True)
 
-# Define custom BERT model with class weights
+# Define the custom BERT model with class weights
 class WeightedBERT(BertPreTrainedModel):
     def __init__(self, config, class_weights):
         super().__init__(config)
@@ -70,7 +70,7 @@ class WeightedBERT(BertPreTrainedModel):
             loss = self.loss_fn(logits, labels)
         return SequenceClassifierOutput(loss=loss, logits=logits)
 
-# Compute class weights
+# Computing class weights
 label_counts = df["label_id"].value_counts().sort_index().values
 weights = torch.tensor(1.0 / label_counts, dtype=torch.float)
 weights = weights / weights.sum()
