@@ -14,22 +14,13 @@ from transformers import (
     BertModel,
 )
 import transformers
-print(transformers.__file__)
+
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers import TrainingArguments
-print(TrainingArguments.__init__.__code__.co_varnames)
-
-
-import transformers
-print(hasattr(transformers, 'SequenceClassifierOutput'))  # Should return True
-print(TrainingArguments)
-print(TrainingArguments.__module__)
 
 from datasets import Dataset, DatasetDict
 import evaluate
-# import transformers
-print("baje")
-print(transformers.__version__)
+
 
 # Load dataset
 df = pd.read_csv("convabuse.csv", sep=";")
