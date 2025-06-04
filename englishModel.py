@@ -17,8 +17,6 @@ from transformers import (
 )
 
 
-
-
 # Loading the dataset
 df = pd.read_csv("convabuse.csv", sep=";")
 df = df[["racist", "sexism", "Input.user"]].dropna()
@@ -32,20 +30,6 @@ def determine_label(row):
     else:
         return "none"
 
-df["label"] = df.apply(determine_label, axis=1)
-label_map = {"racist": 0, "sexist": 1, "none": 2}
-df["label_id"] = df["label"].map(label_map)
-
-train_texts, test_texts, train_labels, test_labels = train_test_split(
-    df["Input.user"], df["label_id"], test_size=0.2, stratify=df["label_id"], random_state=42
-)
-
-train_dataset = Dataset.from_dict({"text": train_texts.tolist(), "label": train_labels.tolist()})
-test_dataset = Dataset.from_dict({"text": test_texts.tolist(), "label": test_labels.tolist()})
-dataset = DatasetDict({"train": train_dataset, "test": test_dataset})
-
-model_name = "bert-base-uncased"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 def tokenize(example):
     return tokenizer(example["text"], truncation=True, padding="max_length", max_length=128)
@@ -70,6 +54,35 @@ class WeightedBERT(BertPreTrainedModel):
             loss = self.loss_fn(logits, labels)
         return SequenceClassifierOutput(loss=loss, logits=logits)
 
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    preds = np.argmax(logits, axis=-1)
+    return {
+        "accuracy": accuracy.compute(predictions=preds, references=labels)["accuracy"],
+        "f1_macro": f1.compute(predictions=preds, references=labels, average="macro")["f1"],
+        "f1_weighted": f1.compute(predictions=preds, references=labels, average="weighted")["f1"]
+    }
+
+
+df["label"] = df.apply(determine_label, axis=1)
+label_map = {"racist": 0, "sexist": 1, "none": 2}
+df["label_id"] = df["label"].map(label_map)
+
+train_texts, test_texts, train_labels, test_labels = train_test_split(
+    df["Input.user"], df["label_id"], test_size=0.2, stratify=df["label_id"], random_state=42
+)
+
+train_dataset = Dataset.from_dict({"text": train_texts.tolist(), "label": train_labels.tolist()})
+test_dataset = Dataset.from_dict({"text": test_texts.tolist(), "label": test_labels.tolist()})
+dataset = DatasetDict({"train": train_dataset, "test": test_dataset})
+
+model_name = "bert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+
+
+
+
 # Computing class weights
 label_counts = df["label_id"].value_counts().sort_index().values
 weights = torch.tensor(1.0 / label_counts, dtype=torch.float)
@@ -82,14 +95,7 @@ model = WeightedBERT.from_pretrained(model_name, config=config, class_weights=we
 accuracy = evaluate.load("accuracy")
 f1 = evaluate.load("f1")
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    preds = np.argmax(logits, axis=-1)
-    return {
-        "accuracy": accuracy.compute(predictions=preds, references=labels)["accuracy"],
-        "f1_macro": f1.compute(predictions=preds, references=labels, average="macro")["f1"],
-        "f1_weighted": f1.compute(predictions=preds, references=labels, average="weighted")["f1"]
-    }
+
 
 training_args = TrainingArguments(
     output_dir="./results",
