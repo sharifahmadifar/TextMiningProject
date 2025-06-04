@@ -7,8 +7,6 @@ The goal of the project is to create models for classifying text contents as off
 
 The goal of the project can also be adapted to other tasks or text phenomena, such as sarcasm, moral values, political opinions and so on. In general, the idea is to find a lexical explanation with respect to the decision of a classifier.
 
-Dataset
-Any dataset suitable for hate speech detection (see for example here and here).
 
 References
 Mathew, B., Saha, P., Yimam, S. M., Biemann, C., Goyal, P., & Mukherjee, A. (2021, May). Hatexplain: A benchmark dataset for explainable hate speech detection. In Proceedings of the AAAI Conference on Artificial Intelligence (Vol. 35, No. 17, pp. 14867-14875).
